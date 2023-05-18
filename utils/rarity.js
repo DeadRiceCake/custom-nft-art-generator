@@ -16,6 +16,7 @@ let rarityData = [];
 // intialize layers to chart
 layerConfigurations.forEach((config) => {
   let layers = config.layersOrder;
+  layers.pop();
 
   layers.forEach((layer) => {
     // get elements for each layer
@@ -45,11 +46,13 @@ layerConfigurations.forEach((config) => {
 // fill up rarity chart with occurrences from metadata
 data.forEach((element) => {
   let attributes = element.attributes;
+  attributes.shift();
   attributes.forEach((attribute) => {
     let traitType = attribute.trait_type;
     let value = attribute.value;
 
     let rarityDataTraits = rarityData[traitType];
+
     rarityDataTraits.forEach((rarityDataTrait) => {
       if (rarityDataTrait.trait == value) {
         // keep track of occurrences

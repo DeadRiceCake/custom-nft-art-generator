@@ -134,12 +134,9 @@ const addMetadata = (_dna, _edition) => {
     name: `${namePrefix} #${_edition}`,
     description: description,
     image: `${baseUri}/${_edition}.png`,
-    dna: sha1(_dna),
     edition: _edition,
-    date: dateTime,
     ...extraMetadata,
     attributes: attributesList,
-    compiler: "HashLips Art Engine",
   };
   if (network == NETWORK.sol) {
     tempMetadata = {
@@ -173,6 +170,29 @@ const addMetadata = (_dna, _edition) => {
 
 const addAttributes = (_element) => {
   let selectedElement = _element.layer.selectedElement;
+
+  if ((selectedElement.name === 'S1') || (selectedElement.name === 'S2')) {
+    attributesList.push({
+      trait_type: 'RARITY',
+      value: 'A',
+    });
+  } else if ((selectedElement.name === 'G1') || (selectedElement.name === 'G2')) {
+    attributesList.push({
+      trait_type: 'RARITY',
+      value: 'S',
+    });
+  } else if (selectedElement.name === 'sky') {
+    attributesList.push({
+      trait_type: 'RARITY',
+      value: 'SS',
+    });
+  } else if (selectedElement.name === 'galaxy') {
+    attributesList.push({
+      trait_type: 'RARITY',
+      value: 'SSS',
+    });
+  }
+
   attributesList.push({
     trait_type: _element.layer.name,
     value: selectedElement.name,
@@ -203,20 +223,22 @@ const drawElement = (_renderObject, _index, _layersLen) => {
   ctx.globalCompositeOperation = _renderObject.layer.blend;
   text.only
     ? addText(
-        `${_renderObject.layer.name}${text.spacer}${_renderObject.layer.selectedElement.name}`,
-        text.xGap,
-        text.yGap * (_index + 1),
-        text.size
-      )
+      `${_renderObject.layer.name}${text.spacer}${_renderObject.layer.selectedElement.name}`,
+      text.xGap,
+      text.yGap * (_index + 1),
+      text.size
+    )
     : ctx.drawImage(
-        _renderObject.loadedImage,
-        0,
-        0,
-        format.width,
-        format.height
-      );
+      _renderObject.loadedImage,
+      0,
+      0,
+      format.width,
+      format.height
+    );
 
-  addAttributes(_renderObject);
+  if (_renderObject.layer.name !== 'AFTER') {
+    addAttributes(_renderObject);
+  }
 };
 
 const constructLayerToDna = (_dna = "", _layers = []) => {
@@ -293,8 +315,7 @@ const createDna = (_layers) => {
       random -= layer.elements[i].weight;
       if (random < 0) {
         return randNum.push(
-          `${layer.elements[i].id}:${layer.elements[i].filename}${
-            layer.bypassDNA ? "?bypassDNA=true" : ""
+          `${layer.elements[i].id}:${layer.elements[i].filename}${layer.bypassDNA ? "?bypassDNA=true" : ""
           }`
         );
       }
@@ -311,8 +332,8 @@ const saveMetaDataSingleFile = (_editionCount) => {
   let metadata = metadataList.find((meta) => meta.edition == _editionCount);
   debugLogs
     ? console.log(
-        `Writing metadata for ${_editionCount}: ${JSON.stringify(metadata)}`
-      )
+      `Writing metadata for ${_editionCount}: ${JSON.stringify(metadata)}`
+    )
     : null;
   fs.writeFileSync(
     `${buildDir}/json/${_editionCount}.json`,
@@ -332,6 +353,10 @@ function shuffle(array) {
     ];
   }
   return array;
+}
+
+function findSpecifyItem(arr, valueToFind) {
+  return arr.some((item) => item.selectedElement.name === valueToFind);
 }
 
 const startCreating = async () => {
@@ -364,6 +389,10 @@ const startCreating = async () => {
         let results = constructLayerToDna(newDna, layers);
         let loadedElements = [];
 
+        if (findSpecifyItem(results, 'black') && (findSpecifyItem(results, 'S1') || findSpecifyItem(results, 'S2'))) {
+          continue;
+        }
+
         results.forEach((layer) => {
           loadedElements.push(loadLayerImg(layer));
         });
@@ -386,11 +415,20 @@ const startCreating = async () => {
             drawBackground();
           }
           renderObjectArray.forEach((renderObject, index) => {
-            drawElement(
-              renderObject,
-              index,
-              layerConfigurations[layerConfigIndex].layersOrder.length
-            );
+            if (index !== (renderObjectArray.length - 1)) {
+              drawElement(
+                renderObject,
+                index,
+                layerConfigurations[layerConfigIndex].layersOrder.length
+              );
+            } else if (index === (renderObjectArray.length - 1) && findSpecifyItem(results, 'bear_bag')) {
+              drawElement(
+                renderObject,
+                index,
+                layerConfigurations[layerConfigIndex].layersOrder.length
+              );
+            }
+
             if (gif.export) {
               hashlipsGiffer.add();
             }
